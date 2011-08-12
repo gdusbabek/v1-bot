@@ -40,11 +40,14 @@ class Status(object):
   
 class Help(object):
   def __init__(self, args):
-    cmd = args[0]
-    if not HELP.has_key(cmd):
-      self.response = 'No help for that command'
+    if not args or len(args) == 0:
+      self.response = 'try: \'help {command}\' or \'commands\''
     else:
-      self.response = HELP[cmd]
+      cmd = args[0]
+      if not HELP.has_key(cmd):
+        self.response = 'No help for that command'
+      else:
+        self.response = HELP[cmd]
       
   def execute(self, **kwargs):
     return [self.response]
