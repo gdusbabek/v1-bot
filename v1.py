@@ -7,25 +7,6 @@ from elementtree import ElementTree as et
 
 SEL_FIELDS = 'Name,ChangeDateUTC,ChangeComment,ChangeReason,ChangedBy.Name,ChangedBy.Nickname'
 
-def fetch(type, timebox):
-  url = V1_HOST + '/' + V1_ENTERPRISE + '/rest-1.v1/Hist/' + type + '?sel=' + SEL_FIELDS
-  if timebox:
-    url += '&where=Timebox.Name=\'' + timebox + '\''
-  url += '&sort=ChangeDateUTC'
-  
-  req = urllib2.Request(url)
-  base64string = base64.encodestring('%s:%s' % (V1_USER, V1_PASS))[:-1]
-  authheader =  "Basic %s" % base64string
-  req.add_header("Authorization", authheader)
-  try:
-    handle = urllib2.urlopen(req)
-    xml = handle.read()
-    return xml
-  except IOError, e:
-    print '*** PROBLEM ***'
-    print e.headers
-    return None
-
 class Asset(object):
   def __init__(self, type, id, name, changed, reason, who):
     self.type = type
@@ -39,10 +20,29 @@ class Asset(object):
     return '%s "%s" updated by %s on %s. reason: %s' % (self.type, self.name, self.who, self.changed, self.reason)
 
 class Scanner(object):
-  def __init__(self, type, cookiePath):
+  def __init__(self, type, v1opts):
+    self.v1opts = v1opts
     self.type = type
-    self.cookiePath = cookiePath
     self.timebox = None
+  
+  def fetch(self):
+    url = self.v1opts['host'] + '/' + self.v1opts['enterprise'] + '/rest-1.v1/Hist/' + self.type + '?sel=' + SEL_FIELDS
+    if self.timebox:
+      url += '&where=Timebox.Name=\'' + self.timebox + '\''
+    url += '&sort=ChangeDateUTC'
+    
+    req = urllib2.Request(url)
+    base64string = base64.encodestring('%s:%s' % (self.v1opts['user'], self.v1opts['password']))[:-1]
+    authheader =  "Basic %s" % base64string
+    req.add_header("Authorization", authheader)
+    try:
+      handle = urllib2.urlopen(req)
+      xml = handle.read()
+      return xml
+    except IOError, e:
+      print '*** PROBLEM ***'
+      print e.headers
+      return None
     
   def _parseHistory(self, xml):
     '''constructs a history object.'''
@@ -61,8 +61,8 @@ class Scanner(object):
       return 0
       
     # first we need to flush the cookie
-    if os.path.exists(self.cookiePath):
-      os.remove(self.cookiePath)
+    if os.path.exists(self.v1opts['cookiePath']):
+      os.remove(self.v1opts['cookiePath'])
     self.timebox = timebox
     skipped = self.catchUp()
     return skipped
@@ -74,9 +74,9 @@ class Scanner(object):
       return []
     
     existingCount = 0
-    if os.path.exists(self.cookiePath):
-      existingCount = int(open(self.cookiePath, 'r').read())
-    xml = fetch(self.type, self.timebox)
+    if os.path.exists(self.v1opts['cookiePath']):
+      existingCount = int(open(self.v1opts['cookiePath'], 'r').read())
+    xml = self.fetch()
     history = self._parseHistory(xml)
     # lop off the old ones.
     history = history[existingCount:]
@@ -85,7 +85,7 @@ class Scanner(object):
       print 'trimming history from %d to %d' % (len(history), maxNew)
       history = history[:maxNew]
       
-    f = open(self.cookiePath, 'w')
+    f = open(self.v1opts['cookiePath'], 'w')
     
     f.write(str(len(history) + existingCount))
     f.close()

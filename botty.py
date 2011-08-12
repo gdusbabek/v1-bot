@@ -56,16 +56,29 @@ def main(args):
   config = cp.RawConfigParser()
   config.read(args[1])
   
-  # todo: put your own credentials here. 'fiercely' is the room passwd in this case.
   channel_string = config.get('bot', 'channel') + ('' if not config.has_option('bot', 'channel_pass') else (' ' + config.get('bot', 'channel_pass')))
   bot = V1Bot(channel_string, 
               config.get('bot', 'nick'), 
               config.get('bot', 'server'), 
               config.getint('bot', 'port'))
   
-  # the second parameter is the 'timebox' (this is v1 nomenclature) that seems to correspond to a sprint in my organization.
-  story = v1.Scanner('Story', config.get('v1', 'story_cookie'))
-  task = v1.Scanner('Task', config.get('v1', 'task_cookie'))
+  storyOpts = {
+    'cookiePath': config.get('v1', 'story_cookie'),
+    'host': config.get('v1', 'host'),
+    'enterprise': config.get('v1', 'enterprise'),
+    'user': config.get('v1', 'user'),
+    'password': config.get('v1', 'pass')
+  }
+  story = v1.Scanner('Story', storyOpts)
+  
+  taskOpts = {
+    'cookiePath': config.get('v1', 'task_cookie'),
+    'host': config.get('v1', 'host'),
+    'enterprise': config.get('v1', 'enterprise'),
+    'user': config.get('v1', 'user'),
+    'password': config.get('v1', 'pass')
+  }
+  task = v1.Scanner('Task', taskOpts)
   
   bot.scanners = [story, task] # ugly coupling for now.
   
