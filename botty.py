@@ -55,6 +55,11 @@ taskThread = v1.ScanThread(task, Outputter(bot))
 
 storyThread.start()
 taskThread.start()
-bot.start()
+
+try:
+  bot.start()
+except KeyboardInterrupt, e:
+  print 'Quitting'
+  sys.exit(0)
 
 print 'it is all going'

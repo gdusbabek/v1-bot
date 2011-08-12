@@ -20,3 +20,4 @@ You can suss out V1_HOST and V1_ENTERPRISE from the URL you use to access V1 wit
 * Load settings (v1 env, chat room, server, etc.) from a configuration file.
 * Figure out why ctrl+c doesn't kill everything.  (I'm new to python threading).
 * Document this stuff.
+* Connect to irc (in separate thread) before polling v1

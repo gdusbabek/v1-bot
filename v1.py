@@ -19,7 +19,6 @@ def fetch(type, timebox):
   url = V1_HOST + '/' + V1_ENTERPRISE + '/rest-1.v1/Hist/' + type + '?sel=' + SEL_FIELDS
   if timebox:
     url += '&where=Timebox.Name=\'' + timebox + '\''
-  print 'fetching %s' % url
   
   req = urllib2.Request(url)
   base64string = base64.encodestring('%s:%s' % (V1_USER, V1_PASS))[:-1]
