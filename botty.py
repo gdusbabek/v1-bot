@@ -13,7 +13,6 @@ class V1Bot(SingleServerIRCBot):
   def __init__(self, channel, nickname, server, port):
     SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
     if len(channel.split(' ')) > 0:
-      print 'splitting channel: ' + channel
       self.join_channel = channel
       self.channel = channel.split(' ')[0]
     else:

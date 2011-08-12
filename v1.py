@@ -71,7 +71,6 @@ class Scanner(object):
     xml = fetch(self.type, self.timebox)
     history = self._parseHistory(xml)
     # lop off the old ones.
-    print 'skipping %d history items' % existingCount
     history = history[existingCount:]
     # trim the ones past max.
     if len(history) > maxNew:
@@ -82,7 +81,9 @@ class Scanner(object):
     
     f.write(str(len(history) + existingCount))
     f.close()
-    print '%s %d' % (self.type, len(history))
+    if len(history) > 0:
+      print 'skipping %d history items' % existingCount
+      print '%s %d new items' % (self.type, len(history))
     return history
   
   def catchUp(self):
