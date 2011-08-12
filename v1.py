@@ -46,10 +46,10 @@ class Asset(object):
     return '%s "%s" updated by %s on %s. reason: %s' % (self.type, self.name, self.who, self.changed, self.reason)
 
 class Scanner(object):
-  def __init__(self, type, cookiePath, timebox):
+  def __init__(self, type, cookiePath):
     self.type = type
     self.cookiePath = cookiePath
-    self.timebox = timebox
+    self.timebox = None
     
   def _parseHistory(self, xml):
     '''constructs a history object.'''
@@ -63,8 +63,22 @@ class Scanner(object):
       assets.append(asset)
     return assets
   
+  def setTimebox(self, timebox):
+    if (timebox == self.timebox):
+      return
+      
+    # first we need to flush the cookie
+    os.remove(self.cookiePath)
+    self.timebox = timebox
+    skipped = self.catchUp()
+    return skipped
+    # things should be good on the next scan
+  
   def scan(self, maxNew=10):
     '''returns just the new items. '''
+    if not self.timebox:
+      return []
+    
     existingCount = 0
     if os.path.exists(self.cookiePath):
       existingCount = int(open(self.cookiePath, 'r').read())
@@ -87,9 +101,13 @@ class Scanner(object):
     return history
   
   def catchUp(self):
-    while len(self.scan(1000)) > 0:
-      pass
-    print '%s caught up' % self.type
+    count = 0
+    scan_count = len(self.scan(1000))
+    while scan_count > 0:
+      count += scan_count
+      scan_count = len(self.scan(1000))
+    print '%s caught up by skipping %d' % (self.type, count)
+    return count
     
 class ScanThread(threading.Thread):
   def __init__(self, scanner, outputter):

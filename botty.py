@@ -1,6 +1,7 @@
 import sys, time, os
 import urllib2, base64, StringIO, pickle
 from elementtree import ElementTree as et
+import ConfigParser as cp
 from ircbot import SingleServerIRCBot
 from irclib import nm_to_n, nm_to_h, irc_lower
 import botcommon
@@ -23,6 +24,7 @@ class V1Bot(SingleServerIRCBot):
     self.queue.start()
 
   def on_welcome(self, c, e):
+    print 'connected. joining %s' % self.channel
     c.join(self.join_channel)
 
   def on_pubmsg(self, c, e):
@@ -30,35 +32,46 @@ class V1Bot(SingleServerIRCBot):
     from_nick = nm_to_n(e.source())
     if msg.startswith(self.nickname + ':'):
       print msg;
-
-class Outputter(object):
-  def __init__(self, bot):
-    self.bot = bot;
   
   def puts(self, text):
-    self.bot.queue.send(text, self.bot.channel)
+    self.queue.send(text, self.channel)
 
-# todo: put your own credentials here. 'fiercely' is the room passwd in this case.
-bot = V1Bot('#fiercefrogs fiercely', 'garydusbabek', 'irc.freenode.net', 6667)
 
-# todo: put your own paths here.
-# the second parameter is the 'timebox' (this is v1 nomenclature) that seems to correspond to a sprint in my organization.
-story = v1.Scanner('Story', '/Users/gary.dusbabek/Desktop/v1/stories_counter_cookie.txt', '8/24/2011')
-task = v1.Scanner('Task', '/Users/gary.dusbabek/Desktop/v1/tasks_counter_cookie.txt', '8/24/2011')
+def main(args):
+  # load config:
+  if len(args) < 2:
+    print 'expected a config file path'
+    sys.exit(-1)
+  config = cp.RawConfigParser()
+  config.read(args[1])
+  
+  # todo: put your own credentials here. 'fiercely' is the room passwd in this case.
+  channel_string = config.get('bot', 'channel') + ('' if not config.has_option('bot', 'channel_pass') else (' ' + config.get('bot', 'channel_pass')))
+  bot = V1Bot(channel_string, 
+              config.get('bot', 'nick'), 
+              config.get('bot', 'server'), 
+              config.getint('bot', 'port'))
+  
+  # the second parameter is the 'timebox' (this is v1 nomenclature) that seems to correspond to a sprint in my organization.
+  story = v1.Scanner('Story', config.get('v1', 'story_cookie'))
+  task = v1.Scanner('Task', config.get('v1', 'task_cookie'))
+  
+  # set the time box. this skips over every change up until $now.
+  # todo: this will need to be done via the bot once it supports commands.
+  print 'set and skip ' + str(story.setTimebox('8/24/2011'))
+  print 'set and skip ' + str(task.setTimebox('8/24/2011'))
+  
+  storyThread = v1.ScanThread(story, bot)
+  taskThread = v1.ScanThread(task, bot)
+  
+  storyThread.start()
+  taskThread.start()
+  
+  try:
+    bot.start()
+  except KeyboardInterrupt, e:
+    print 'Quitting'
+    sys.exit(0)
 
-#story.catchUp()
-#task.catchUp()
-
-storyThread = v1.ScanThread(story, Outputter(bot))
-taskThread = v1.ScanThread(task, Outputter(bot))
-
-storyThread.start()
-taskThread.start()
-
-try:
-  bot.start()
-except KeyboardInterrupt, e:
-  print 'Quitting'
-  sys.exit(0)
-
-print 'it is all going'
+if __name__ == '__main__':
+  main(sys.argv)
