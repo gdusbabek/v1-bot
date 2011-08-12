@@ -6,19 +6,19 @@ from ircbot import SingleServerIRCBot
 from irclib import nm_to_n, nm_to_h, irc_lower
 import botcommon
 import v1
-
-BOT_COMMANDS = ['commands', 'help']
-
+import commands
 
 class V1Bot(SingleServerIRCBot):
   def __init__(self, channel, nickname, server, port):
     SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
+    self.voiced = True
     if len(channel.split(' ')) > 0:
       self.join_channel = channel
       self.channel = channel.split(' ')[0]
     else:
       self.channel = channel
       self.join_channel = channel
+    self.scanners = []
     self.nickname = nickname
     self.queue = botcommon.OutputManager(self.connection)
     self.queue.start()
@@ -31,10 +31,21 @@ class V1Bot(SingleServerIRCBot):
     msg = e.arguments()[0]
     from_nick = nm_to_n(e.source())
     if msg.startswith(self.nickname + ':'):
-      print msg;
+      args = msg.split(' ')[1:]
+      cmd = commands.makeCommand(args)
+      if cmd:
+        responses = cmd.execute(scanners=self.scanners, bot=self)
+        for resp in responses:
+          self.puts(resp, True)
   
-  def puts(self, text):
-    self.queue.send(text, self.channel)
+  def puts(self, text, force=False):
+    if self.voiced or force:
+      self.queue.send(text, self.channel)
+    else:
+      print 'UNVOICED: ' + text
+    
+  def setVoice(self, status):
+    self.voiced = status
 
 
 def main(args):
@@ -56,10 +67,11 @@ def main(args):
   story = v1.Scanner('Story', config.get('v1', 'story_cookie'))
   task = v1.Scanner('Task', config.get('v1', 'task_cookie'))
   
+  bot.scanners = [story, task] # ugly coupling for now.
+  
   # set the time box. this skips over every change up until $now.
-  # todo: this will need to be done via the bot once it supports commands.
-  print 'set and skip ' + str(story.setTimebox('8/24/2011'))
-  print 'set and skip ' + str(task.setTimebox('8/24/2011'))
+#  print 'set and skip ' + str(story.setTimebox('8/24/2011'))
+#  print 'set and skip ' + str(task.setTimebox('8/24/2011'))
   
   storyThread = v1.ScanThread(story, bot)
   taskThread = v1.ScanThread(task, bot)

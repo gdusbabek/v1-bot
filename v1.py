@@ -66,10 +66,11 @@ class Scanner(object):
   
   def setTimebox(self, timebox):
     if (timebox == self.timebox):
-      return
+      return 0
       
     # first we need to flush the cookie
-    os.remove(self.cookiePath)
+    if os.path.exists(self.cookiePath):
+      os.remove(self.cookiePath)
     self.timebox = timebox
     skipped = self.catchUp()
     return skipped
