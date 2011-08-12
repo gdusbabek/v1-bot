@@ -5,14 +5,6 @@ import threading
 import datetime, time
 from elementtree import ElementTree as et
 
-V1_HOST = os.getenv('V1_HOST')
-V1_ENTERPRISE = os.getenv('V1_ENTERPRISE')
-V1_USER = os.getenv('V1_USER')
-V1_PASS = os.getenv('V1_PASS')
-if not (V1_USER or V1_PASS):
-    print 'V1 env not configured'
-    sys.exit(-1)
-
 SEL_FIELDS = 'Name,ChangeDateUTC,ChangeComment,ChangeReason,ChangedBy.Name,ChangedBy.Nickname'
 
 def fetch(type, timebox):
